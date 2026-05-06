@@ -1,0 +1,3 @@
+"""
+Connection Manager for WebSockets
+"""
