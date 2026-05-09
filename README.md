@@ -1,207 +1,300 @@
-# Fursafe MyAI Companion
+# MyAI Companion — Setup Guide
 
-A healthcare support mobile app. Patients describe symptoms or scan medical documents and receive plain-language AI summaries. Not a medical professional — always consult a doctor.
+A healthcare support mobile app that lets patients describe symptoms, scan medical documents, and receive plain-language AI summaries via voice, camera, or text chat.
 
-Built with **React Native (Expo)** + **FastAPI (Python)**.
+> This app is a support tool only. It does not provide medical advice. Always consult a qualified healthcare professional.
 
 ---
 
-## What You Need Before Starting
+## Overview
 
-- A Mac, Windows, or Linux computer
-- Your phone (iOS or Android) on the **same Wi-Fi** as your computer
+The app has two parts that both need to be running at the same time:
+
+- **Backend** — a Python server that runs on your computer
+- **Frontend** — a React Native app that runs on your phone via Expo Go
+
+---
+
+## Requirements
+
+You will need:
+
+- A computer (Mac, Windows, or Linux)
+- A smartphone (iPhone or Android)
+- Both your computer and phone connected to the **same Wi-Fi network**
 - Internet connection
 
 ---
 
-## Step 1 — Install these tools on your computer
+## Part 1 — Install Software on Your Computer
 
-### Node.js
-Go to https://nodejs.org — download and install the **LTS** version.
+### 1.1 Install Node.js
 
-Check it worked:
+Go to https://nodejs.org and download the **LTS** version. Run the installer.
+
+Verify it installed correctly by opening a terminal and running:
+
 ```
 node --version
+```
+
+```
 npm --version
 ```
 
-### Miniconda (Python environment manager)
-Go to https://docs.conda.io/en/latest/miniconda.html — download and install for your operating system.
+Both commands should print a version number. If they do, Node.js is installed.
 
-Check it worked:
+---
+
+### 1.2 Install Miniconda
+
+Miniconda manages the Python environment for the backend.
+
+Go to https://docs.conda.io/en/latest/miniconda.html and download the installer for your operating system. Run it and follow the prompts. When it asks, choose to add conda to your PATH.
+
+After installing, **close and reopen your terminal**, then verify:
+
 ```
 conda --version
 ```
 
-### Git
-Go to https://git-scm.com — download and install.
+It should print something like `conda 24.x.x`.
 
-Check it worked:
+---
+
+### 1.3 Install Git
+
+Go to https://git-scm.com and download Git for your operating system. Run the installer with default settings.
+
+Verify:
+
 ```
 git --version
 ```
 
-### Expo Go (on your phone)
-- iPhone: search "Expo Go" in the App Store
-- Android: search "Expo Go" in the Google Play Store
+---
+
+### 1.4 Install Expo Go on your phone
+
+- **iPhone**: Open the App Store, search **Expo Go**, install it
+- **Android**: Open the Google Play Store, search **Expo Go**, install it
 
 ---
 
-## Step 2 — Get API keys (free)
+## Part 2 — Get API Keys
 
-You need two API keys. Get them before continuing.
+The app uses two external services. Both have free tiers. You need to sign up and get keys before the backend will work.
 
-### Groq API key (for AI chat + voice transcription)
+### 2.1 Groq API Key (used for AI chat and voice transcription)
+
 1. Go to https://console.groq.com
-2. Sign up with Google or email
-3. Click **API Keys** in the left sidebar
+2. Click **Sign Up** and create a free account
+3. After logging in, click **API Keys** in the left sidebar
 4. Click **Create API Key**
-5. Copy the key — it looks like `gsk_xxxxxxxxxxxx`
+5. Give it any name (e.g. "myai")
+6. Copy the key — it starts with `gsk_`
+7. Save it somewhere — you will need it in Part 4
 
-### OCR.space API key (for document scanning)
+### 2.2 OCR.space API Key (used for scanning documents and prescriptions)
+
 1. Go to https://ocr.space/ocrapi
-2. Click **Free API** or **Register for free API key**
-3. Fill in name and email
-4. Check your email — the key will be in the email they send you
+2. Click **Free API** or the register link on the page
+3. Fill in your name and email address and submit
+4. Check your email inbox — they will send you the API key
+5. Copy the key and save it — you will need it in Part 4
 
 ---
 
-## Step 3 — Download the project
+## Part 3 — Download the Project
 
-Open a terminal (Mac: search Terminal, Windows: search Command Prompt) and run:
+Open a terminal on your computer and run these commands one at a time.
+
+Clone the repository:
 
 ```
 git clone https://github.com/Vraj5376052/Fursafe-Myai-Companion-Final.git
 ```
 
-Then go into the folder:
+Move into the project folder:
+
 ```
 cd Fursafe-Myai-Companion-Final
 ```
 
 ---
 
-## Step 4 — Find your computer's local IP address
+## Part 4 — Set Up the Backend
 
-Your phone needs to connect to your computer. Run this to find your IP:
+Open a terminal. Run each command below one at a time and wait for each to finish before running the next.
+
+### 4.1 Go into the backend folder
+
+```
+cd Fursafe-Myai-Companion-Final/Final\ backend
+```
+
+### 4.2 Create the Python environment
+
+This only needs to be done once:
+
+```
+conda create -n myai python=3.11 -y
+```
+
+Wait for it to finish. It may take a minute.
+
+### 4.3 Activate the environment
+
+```
+conda activate myai
+```
+
+You will see `(myai)` appear at the start of your terminal line. You need to run this every time you open a new terminal before starting the backend.
+
+### 4.4 Install Python packages
+
+```
+pip install -r requirements.txt
+```
+
+Wait for all packages to finish installing.
+
+### 4.5 Create the API keys file
+
+**Mac or Linux:**
+```
+touch .env
+```
+
+**Windows:**
+```
+type nul > .env
+```
+
+Now open the `.env` file in any text editor (Notepad, TextEdit, VS Code, etc.). The file is located inside the `Final backend` folder.
+
+Paste in the following, replacing the placeholder text with your actual keys from Part 2:
+
+```
+GROQ_API_KEY=paste_your_groq_key_here
+OCR_API_KEY=paste_your_ocr_space_key_here
+```
+
+Save and close the file.
+
+### 4.6 Find your computer's local IP address
+
+Your phone connects to the backend using your computer's local IP address on the Wi-Fi network. You need to find this now.
 
 **Mac:**
 ```
 ipconfig getifaddr en0
 ```
 
-**Windows:**
+**Windows (run in Command Prompt):**
 ```
 ipconfig
 ```
-Look for **IPv4 Address** under your Wi-Fi section. It will look like `192.168.x.x` or `10.x.x.x`.
+Look for **IPv4 Address** under the section for your Wi-Fi adapter. It will look like `192.168.x.x` or `10.x.x.x`.
 
-Write this IP down — you need it in Step 6.
-
----
-
-## Step 5 — Set up and run the Backend
-
-Open a new terminal window and run these commands **one at a time**:
-
+**Linux:**
 ```
-cd Fursafe-Myai-Companion-Final/Final\ backend
+hostname -I
 ```
 
-Create the Python environment (only do this once):
-```
-conda create -n myai python=3.11 -y
-```
+Write down this IP address. You will need it in Part 5.
 
-Activate it (do this every time you open a new terminal):
-```
-conda activate myai
-```
+### 4.7 Start the backend server
 
-Install all Python packages:
-```
-pip install -r requirements.txt
-```
-
-Create the API keys file:
-```
-touch .env
-```
-On Windows instead run:
-```
-type nul > .env
-```
-
-Open the `.env` file in any text editor and paste this (replacing with your actual keys):
-```
-GROQ_API_KEY=paste_your_groq_key_here
-OCR_API_KEY=paste_your_ocr_space_key_here
-```
-Save the file.
-
-Start the backend server:
 ```
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-You should see:
+The server is ready when you see this in the terminal:
+
 ```
 INFO:     Uvicorn running on http://0.0.0.0:8000
 INFO:     Application startup complete.
 ```
 
-Leave this terminal open. The backend must keep running while you use the app.
+To double-check it is working, open a browser on your computer and go to:
+
+```
+http://localhost:8000
+```
+
+You should see: `{"status":"online"}`
+
+**Leave this terminal open and running.** Do not close it while using the app.
 
 ---
 
-## Step 6 — Set up and run the Frontend
+## Part 5 — Set Up the Frontend
 
-Open a **second** terminal window and run these commands **one at a time**:
+Open a **second terminal window** (keep the first one running the backend). Run each command below one at a time.
+
+### 5.1 Go into the frontend folder
 
 ```
-cd Fursafe-Myai-Companion-Final/Final\ frontend
+cd Fursafe-Myai-Companion-Final/Final_frontend
 ```
 
-Install all JavaScript packages:
+### 5.2 Install JavaScript packages
+
 ```
 npm install
 ```
 
-Install Expo packages:
+Wait for it to finish. This may take a few minutes the first time.
+
+### 5.3 Install Expo packages
+
 ```
 npx expo install expo-speech expo-av expo-camera expo-image-picker expo-secure-store
 ```
 
-**Update the IP address** — open `src/services/apiService.js` in a text editor. Find line 4 which looks like:
+### 5.4 Update the IP address in the app
+
+Open the file `Final_frontend/src/services/apiService.js` in a text editor.
+
+Find **line 4** which looks like this:
+
 ```
-const BASE_URL = Platform.OS === "web" ? "http://localhost:8000" : "http://10.128.170.142:8000";
+const BASE_URL = Platform.OS === "web" ? "http://localhost:8000" : "http://192.168.1.247:8000";
 ```
 
-Replace the IP (`10.128.170.142`) with **your IP from Step 4**. For example if your IP is `192.168.1.50`:
+Replace the IP address (the part after the last `http://` and before `:8000`) with **your IP address from Step 4.6**.
+
+For example, if your IP is `192.168.1.50`, line 4 should look like:
+
 ```
 const BASE_URL = Platform.OS === "web" ? "http://localhost:8000" : "http://192.168.1.50:8000";
 ```
+
 Save the file.
 
-Start the frontend:
+### 5.5 Start the app
+
 ```
 npx expo start --clear
 ```
 
 A QR code will appear in the terminal.
 
-- **iPhone**: Open your camera app and point it at the QR code, then tap the notification
-- **Android**: Open the Expo Go app, tap "Scan QR code", then scan it
+**iPhone:** Open your phone's Camera app, point it at the QR code, and tap the yellow Expo Go notification that appears at the top.
 
-The app will load on your phone.
+**Android:** Open the Expo Go app, tap **Scan QR Code**, then point your camera at the QR code.
+
+The app will load on your phone in about 10–30 seconds.
 
 ---
 
 ## Every Time You Come Back
 
-You need to start both the backend and frontend again. Open two terminal windows:
+You need to start both the backend and frontend again each time. Open two separate terminal windows.
 
 **Terminal 1 — Backend:**
+
 ```
 cd Fursafe-Myai-Companion-Final/Final\ backend
 conda activate myai
@@ -209,35 +302,110 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 **Terminal 2 — Frontend:**
+
 ```
-cd Fursafe-Myai-Companion-Final/Final\ frontend
+cd Fursafe-Myai-Companion-Final/Final_frontend
+npx expo start --clear
+```
+
+Scan the QR code with Expo Go.
+
+---
+
+## Important: When Your IP Address Changes
+
+Your computer's local IP address can change when you reconnect to Wi-Fi, restart your router, or switch networks. When this happens the app will show "Server timeout" or "Network request failed".
+
+To fix it:
+
+1. Run `ipconfig getifaddr en0` (Mac) or `ipconfig` (Windows) to get the new IP
+2. Open `Final_frontend/src/services/apiService.js` and update line 4 with the new IP
+3. Save the file
+4. Run `npx expo start --clear`
+5. Scan the QR code again
+
+---
+
+## Troubleshooting
+
+**"Server timeout" when trying to log in or send a message**
+- Make sure the backend terminal is open and showing `Application startup complete`
+- Check the IP in `src/services/apiService.js` matches your current local IP
+- Test by opening `http://YOUR_IP:8000` in your phone's browser — if it shows `{"status":"online"}` the backend is reachable
+- Make sure your phone and computer are on the same Wi-Fi network
+- Run `npx expo start --clear` and scan the QR code again fresh
+
+**"ModuleNotFoundError" when starting the backend**
+```
+conda activate myai
+pip install -r requirements.txt
+```
+
+**"GROQ_API_KEY not configured" error**
+The `.env` file is missing or has the wrong content. Make sure the file is inside the `Final backend` folder (same folder as `main.py`) and contains your actual API key on a single line with no extra spaces.
+
+**App shows old version / login still fails after changing IP**
+Metro (the JS bundler) cached the old version. Force clear it:
+```
+npx expo start --clear
+```
+Then on your phone, fully close Expo Go (swipe it away in your app switcher) and scan the QR code again.
+
+**Database error on startup**
+Delete the database file and let the server recreate it:
+
+Mac/Linux:
+```
+cd Fursafe-Myai-Companion-Final/Final\ backend
+rm myai_companion.db
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Windows:
+```
+cd Fursafe-Myai-Companion-Final\Final backend
+del myai_companion.db
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+**Camera or microphone not working on phone**
+When the app requests permissions, tap Allow. If you accidentally denied them:
+- iPhone: Settings → Expo Go → enable Camera and Microphone
+- Android: Settings → Apps → Expo Go → Permissions → enable Camera and Microphone
+
+**`npm install` fails or app crashes on open**
+Delete and reinstall all packages:
+
+Mac/Linux:
+```
+cd Fursafe-Myai-Companion-Final/Final_frontend
+rm -rf node_modules
+npm install
+npx expo start --clear
+```
+
+Windows:
+```
+cd Fursafe-Myai-Companion-Final\Final_frontend
+rd /s /q node_modules
+npm install
 npx expo start --clear
 ```
 
 ---
 
-## Common Problems
+## App Features
 
-**"Server timeout" or "Network request failed" when logging in**
-
-Your IP has changed (this happens when you reconnect to Wi-Fi). Run `ipconfig getifaddr en0` (Mac) or `ipconfig` (Windows) to get the new IP. Update it in `Final frontend/src/services/apiService.js` line 4, then restart the frontend with `npx expo start --clear`.
-
-**"ModuleNotFoundError" when starting backend**
-
-You forgot to activate conda. Run `conda activate myai` then try again.
-
-**Old version of app showing on phone**
-
-Run `npx expo start --clear` — the `--clear` flag clears the cache.
-
-**Camera or microphone not working**
-
-When the app asks for permission, tap Allow. On iPhone go to Settings → Expo Go → turn on Camera and Microphone.
-
-**App crashes or shows white screen**
-
-Run `npm install` then `npx expo start --clear`.
-
-**"Email already registered" when signing up**
-
-That email already has an account. Try logging in instead, or use a different email.
+| Feature | How to use |
+|---------|-----------|
+| AI Chat | Type a message and tap the send button |
+| Voice Input | Tap the microphone icon, record, and it sends to AI |
+| Document Scan | Tap the camera icon, scan a document, and it sends to AI |
+| Explain | Tap the Explain chip to get a simple explanation of your last message |
+| Summarise | Tap the Summarise chip to get a summary of your last message |
+| Translate | Tap the Translate chip and select a language |
+| Text-to-Speech | Tap the speaker icon on any AI message to hear it read aloud |
+| Auto-Speak | Toggle in the header or Profile screen to auto-read every AI response |
+| Chat History | Tap the menu icon (top right) to see, switch, or delete past chats |
+| Edit Profile | Tap the person icon → Edit Profile to change your name or password |
+| Guest Mode | Tap "Continue as Guest" on the login screen — limited to basic features |
