@@ -1,8 +1,6 @@
 import os
 import requests
 from fastapi import APIRouter, HTTPException, UploadFile, File
-from app.core.database import SessionLocal
-from app.model.transcript import Transcript
 
 router = APIRouter()
 
@@ -12,7 +10,7 @@ async def scan_image(file: UploadFile = File(...)):
     ocr_api_key = os.getenv("OCR_API_KEY")
 
     if not ocr_api_key:
-        raise HTTPException(status_code=500, detail="OCR API key not configured")
+        raise HTTPException(status_code=500, detail="OCR_API_KEY not configured")
 
     try:
         image_bytes = await file.read()
@@ -49,32 +47,12 @@ async def scan_image(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/save_transcript")
-async def save_transcript(data: dict):
-    db = SessionLocal()
-    try:
-        transcript = Transcript(
-            user_id=data.get("user_id"),
-            chat_id=data.get("chat_id"),
-            raw_text=data.get("raw_text"),
-            ai_explanation=data.get("ai_explanation")
-        )
-        db.add(transcript)
-        db.commit()
-        db.refresh(transcript)
-        return {"id": transcript.id}
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        db.close()
-
-
 @router.post("/transcribe")
 async def transcribe_audio(file: UploadFile = File(...)):
     groq_api_key = os.getenv("GROQ_API_KEY")
+
     if not groq_api_key:
-        raise HTTPException(status_code=500, detail="Groq API key not configured")
+        raise HTTPException(status_code=500, detail="GROQ_API_KEY not configured")
 
     try:
         audio_bytes = await file.read()

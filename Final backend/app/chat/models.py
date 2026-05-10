@@ -1,3 +1,0 @@
-"""
-MongoDB document definitions
-"""

@@ -1,7 +1,7 @@
 import { Platform } from "react-native";
 
 // change to your PC IP if testing on phone
-const BASE_URL = Platform.OS === "web" ? "http://localhost:8000" : "http://10.128.170.142:8000";
+const BASE_URL = Platform.OS === "web" ? "http://localhost:8000" : "http://192.168.1.247:8000";
 
 // AUTH
 
