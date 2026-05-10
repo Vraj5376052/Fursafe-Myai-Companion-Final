@@ -11,11 +11,24 @@ import { Ionicons } from "@expo/vector-icons";
 import styles from "../styles/style";
 import { register } from "../services/apiService";
 
-export default function SignupScreen({ goLogin, onSignup }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
+export default function SignupScreen({
+  goLogin,
+  onSignup,
+  goTerms,
+  termsAccepted,
+  setTermsAccepted,
+  formValues,
+  setFormValues,
+}) {
+  // Lifted to App.js so values survive navigation to Terms and back
+  const name     = formValues?.name     ?? "";
+  const email    = formValues?.email    ?? "";
+  const password = formValues?.password ?? "";
+  const confirm  = formValues?.confirm  ?? "";
+  const setName     = (v) => setFormValues((f) => ({ ...f, name: v }));
+  const setEmail    = (v) => setFormValues((f) => ({ ...f, email: v }));
+  const setPassword = (v) => setFormValues((f) => ({ ...f, password: v }));
+  const setConfirm  = (v) => setFormValues((f) => ({ ...f, confirm: v }));
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -24,17 +37,19 @@ export default function SignupScreen({ goLogin, onSignup }) {
       setError("Please fill all fields");
       return;
     }
-
     if (password !== confirm) {
       setError("Passwords do not match");
+      return;
+    }
+    if (!termsAccepted) {
+      setError("You must accept the Terms and Conditions to register");
       return;
     }
 
     try {
       setLoading(true);
       setError("");
-      const res = await register(name, email, password);
-
+      const res = await register(name, email, password, termsAccepted);
       if (res.access_token) {
         onSignup(res);
       } else {
@@ -55,16 +70,10 @@ export default function SignupScreen({ goLogin, onSignup }) {
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Sign up to get started</Text>
 
-          {/* FORM */}
           <View style={styles.form}>
 
             <View style={styles.inputWrapper}>
-              <Ionicons
-                name="person-outline"
-                size={20}
-                color="#888"
-                style={{ marginRight: 10 }}
-              />
+              <Ionicons name="person-outline" size={20} color="#888" style={{ marginRight: 10 }} />
               <TextInput
                 placeholder="Full Name"
                 placeholderTextColor="#888"
@@ -75,12 +84,7 @@ export default function SignupScreen({ goLogin, onSignup }) {
             </View>
 
             <View style={styles.inputWrapper}>
-              <Ionicons
-                name="mail-outline"
-                size={20}
-                color="#888"
-                style={{ marginRight: 10 }}
-              />
+              <Ionicons name="mail-outline" size={20} color="#888" style={{ marginRight: 10 }} />
               <TextInput
                 placeholder="Email"
                 placeholderTextColor="#888"
@@ -93,12 +97,7 @@ export default function SignupScreen({ goLogin, onSignup }) {
             </View>
 
             <View style={styles.inputWrapper}>
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color="#888"
-                style={{ marginRight: 10 }}
-              />
+              <Ionicons name="lock-closed-outline" size={20} color="#888" style={{ marginRight: 10 }} />
               <TextInput
                 placeholder="Password"
                 secureTextEntry
@@ -110,12 +109,7 @@ export default function SignupScreen({ goLogin, onSignup }) {
             </View>
 
             <View style={styles.inputWrapper}>
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color="#888"
-                style={{ marginRight: 10 }}
-              />
+              <Ionicons name="lock-closed-outline" size={20} color="#888" style={{ marginRight: 10 }} />
               <TextInput
                 placeholder="Confirm Password"
                 secureTextEntry
@@ -126,16 +120,35 @@ export default function SignupScreen({ goLogin, onSignup }) {
               />
             </View>
 
+            {/* TERMS LINK */}
+            <TouchableOpacity onPress={goTerms} style={{ marginTop: 6 }}>
+              <Text style={styles.link}>Read Terms &amp; Conditions</Text>
+            </TouchableOpacity>
+
+            {/* TERMS CHECKBOX */}
+            <TouchableOpacity
+              onPress={() => setTermsAccepted(!termsAccepted)}
+              style={{ flexDirection: "row", alignItems: "center", marginTop: 10 }}
+            >
+              <Ionicons
+                name={termsAccepted ? "checkbox" : "square-outline"}
+                size={22}
+                color={termsAccepted ? "#4CAF50" : "#888"}
+                style={{ marginRight: 8 }}
+              />
+              <Text style={{ color: "#ccc", flex: 1 }}>
+                I agree to the Terms and Conditions
+              </Text>
+            </TouchableOpacity>
+
           </View>
 
-          {/* ERROR */}
           {error ? (
             <Text style={{ color: "#ff4444", textAlign: "center", marginTop: 10 }}>
               {error}
             </Text>
           ) : null}
 
-          {/* BUTTON */}
           <TouchableOpacity
             style={styles.primaryButton}
             onPress={handleSignup}
@@ -148,12 +161,9 @@ export default function SignupScreen({ goLogin, onSignup }) {
             )}
           </TouchableOpacity>
 
-          {/* LOGIN */}
           <Text style={styles.grayText}>
             Already have an account?{" "}
-            <Text style={styles.link} onPress={goLogin}>
-              Login
-            </Text>
+            <Text style={styles.link} onPress={goLogin}>Login</Text>
           </Text>
 
         </View>

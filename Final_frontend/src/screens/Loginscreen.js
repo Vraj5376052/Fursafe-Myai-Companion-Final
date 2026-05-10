@@ -27,7 +27,6 @@ export default function LoginScreen({ onLogin, goSignup }) {
       setLoading(true);
       setError("");
       const res = await login(email, password);
-
       if (res.access_token) {
         onLogin(res);
       } else {
@@ -45,29 +44,18 @@ export default function LoginScreen({ onLogin, goSignup }) {
       <View style={styles.container}>
         <View style={styles.phoneFrame}>
 
-          {/* TOP */}
           <View style={styles.loginTop}>
             <View style={styles.circleIcon}>
               <Ionicons name="person" size={30} color="#04041c" />
             </View>
-
             <Text style={styles.title}>MyAI Companion</Text>
-            <Text style={styles.subtitle}>
-              Your intelligent health assistant
-            </Text>
+            <Text style={styles.subtitle}>Your intelligent health assistant</Text>
           </View>
 
-          {/* FORM */}
           <View style={styles.form}>
 
-            {/* EMAIL */}
             <View style={styles.inputWrapper}>
-              <Ionicons
-                name="mail-outline"
-                size={20}
-                color="#888"
-                style={{ marginRight: 10 }}
-              />
+              <Ionicons name="mail-outline" size={20} color="#888" style={{ marginRight: 10 }} />
               <TextInput
                 placeholder="Enter your email"
                 placeholderTextColor="#888"
@@ -79,14 +67,8 @@ export default function LoginScreen({ onLogin, goSignup }) {
               />
             </View>
 
-            {/* PASSWORD */}
             <View style={styles.inputWrapper}>
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color="#888"
-                style={{ marginRight: 10 }}
-              />
+              <Ionicons name="lock-closed-outline" size={20} color="#888" style={{ marginRight: 10 }} />
               <TextInput
                 placeholder="Enter your password"
                 placeholderTextColor="#888"
@@ -102,9 +84,9 @@ export default function LoginScreen({ onLogin, goSignup }) {
                 {error}
               </Text>
             ) : null}
+
           </View>
 
-          {/* LOGIN BUTTON */}
           <TouchableOpacity
             style={styles.primaryButton}
             onPress={handleLogin}
@@ -117,17 +99,13 @@ export default function LoginScreen({ onLogin, goSignup }) {
             )}
           </TouchableOpacity>
 
-          {/* CONTINUE AS GUEST */}
           <TouchableOpacity onPress={() => onLogin({ access_token: null, user: null })}>
             <Text style={styles.grayText}>Continue as Guest</Text>
           </TouchableOpacity>
 
-          {/* SIGNUP */}
           <Text style={[styles.grayText, { marginTop: 15 }]}>
             Don't have an account?{" "}
-            <Text style={styles.link} onPress={goSignup}>
-              Sign up
-            </Text>
+            <Text style={styles.link} onPress={goSignup}>Sign up</Text>
           </Text>
 
         </View>

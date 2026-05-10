@@ -26,43 +26,33 @@ export default function ChatScreen({
   goBack,
   goUser,
   incoming,
+  setIncoming,         
   token,
   messages,
   setMessages,
   autoSpeak,
   setAutoSpeak,
+  targetLang,
+  setTargetLang,
 }) {
   const [input, setInput] = useState("");
   const scrollRef = useRef(null);
-
   const [chatId, setChatId] = useState(null);
   const [chatList, setChatList] = useState([]);
   const [showChats, setShowChats] = useState(false);
-
-  // LANGUAGE FEATURE
   const [showLang, setShowLang] = useState(false);
   const [searchLang, setSearchLang] = useState("");
-  const [targetLang, setTargetLang] = useState("English");
 
   const languages = [
     "English", "Vietnamese", "Chinese", "Japanese", "Korean",
-    "French", "German", "Spanish", "Italian"
+    "French", "German", "Spanish", "Italian",
   ];
 
-  const getLangCode = (lang) => {
-    const map = {
-      English: "en-US",
-      Vietnamese: "vi-VN",
-      Chinese: "zh-CN",
-      Japanese: "ja-JP",
-      Korean: "ko-KR",
-      French: "fr-FR",
-      German: "de-DE",
-      Spanish: "es-ES",
-      Italian: "it-IT",
-    };
-    return map[lang] || "en-US";
-  };
+  const getLangCode = (lang) => ({
+    English: "en-US", Vietnamese: "vi-VN", Chinese: "zh-CN",
+    Japanese: "ja-JP", Korean: "ko-KR", French: "fr-FR",
+    German: "de-DE", Spanish: "es-ES", Italian: "it-IT",
+  }[lang] || "en-US");
 
   const detectLanguage = (text) => {
     if (!text) return "en-US";
@@ -76,46 +66,36 @@ export default function ChatScreen({
   // LOAD CHAT LIST
   useEffect(() => {
     if (!token?.token) return;
-
     const loadChats = async () => {
       try {
         const res = await fetchChats(token.token);
         setChatList(res);
-
-        if (res.length && !chatId) {
-          setChatId(res[0].id);
-        }
+        if (res.length && !chatId) setChatId(res[0].id);
       } catch (err) {
         console.log("Fetch chats error:", err);
       }
     };
-
     loadChats();
   }, [token]);
 
   // LOAD CHAT MESSAGES
   useEffect(() => {
     if (!chatId) return;
-
     const loadChat = async () => {
       try {
         setMessages([{ type: "ai", text: "Loading chat..." }]);
-
         const res = await fetchChatById(chatId, token?.token);
-
         if (res?.messages) {
           const formatted = res.messages.map((m) => ({
             type: m.role === "user" ? "user" : "ai",
             text: m.message,
           }));
-
           setMessages(formatted.length ? formatted : [{ type: "ai", text: "Hi, I'm here to help." }]);
         }
       } catch (err) {
         console.log("Fetch chat error:", err);
       }
     };
-
     loadChat();
   }, [chatId]);
 
@@ -124,15 +104,11 @@ export default function ChatScreen({
     if (!text.trim()) return;
 
     if (!token?.token) {
-      setMessages((p) => [
-        ...p,
-        { type: "ai", text: "Please login to use AI features." }
-      ]);
+      setMessages((p) => [...p, { type: "ai", text: "Please login to use AI features." }]);
       return;
     }
 
     let currentChatId = chatId;
-
     if (!currentChatId) {
       try {
         const newChat = await createChat(token.token);
@@ -144,18 +120,24 @@ export default function ChatScreen({
       }
     }
 
-    setMessages((p) => [
-      ...p,
-      { type: "user", text },
-      { type: "ai", text: "Thinking..." }
-    ]);
-
+    setMessages((p) => [...p, { type: "user", text }, { type: "ai", text: "Thinking..." }]);
     setInput("");
 
     try {
+      // AI always responds in English for reliability
       const res = await addMessage(currentChatId, text, token.token);
+      let aiText = res.ai_message || "AI unavailable";
 
-      const aiText = res.ai_message || "AI unavailable";
+      // Auto-translate the English response if user has a preferred language
+      if (targetLang && targetLang !== "English") {
+        try {
+          const translated = await translateText(aiText, targetLang, token?.token);
+          if (translated?.translated_text) aiText = translated.translated_text;
+        } catch (err) {
+          console.log("Auto-translate error:", err);
+          // Fall back to English response silently
+        }
+      }
 
       setMessages((p) => {
         const updated = [...p];
@@ -163,13 +145,10 @@ export default function ChatScreen({
         return updated;
       });
 
-      if (autoSpeak) {
-        speakText(aiText);
-      }
+      if (autoSpeak) speakText(aiText);
 
       const updatedChats = await fetchChats(token.token);
       setChatList(updatedChats);
-
     } catch (error) {
       setMessages((p) => {
         const updated = [...p];
@@ -179,9 +158,12 @@ export default function ChatScreen({
     }
   };
 
-  // INCOMING (from record/camera)
+  // INCOMING 
   useEffect(() => {
-    if (incoming) sendMessage(incoming);
+    if (incoming) {
+      sendMessage(incoming);
+      setIncoming("");
+    }
   }, [incoming]);
 
   // AUTO SCROLL
@@ -189,14 +171,12 @@ export default function ChatScreen({
     scrollRef.current?.scrollToEnd({ animated: true });
   }, [messages]);
 
-  // CREATE NEW CHAT
   const handleCreateChat = async () => {
     try {
       const res = await createChat(token?.token);
       setMessages([{ type: "ai", text: "New chat started." }]);
       setChatId(res.chatId);
       setShowChats(false);
-
       const updated = await fetchChats(token?.token);
       setChatList(updated);
     } catch (err) {
@@ -204,14 +184,11 @@ export default function ChatScreen({
     }
   };
 
-  // DELETE CHAT
   const handleDeleteChat = async (id) => {
     try {
       await deleteChat(id, token?.token);
-
       const updated = await fetchChats(token?.token);
       setChatList(updated);
-
       if (chatId === id) {
         setMessages([{ type: "ai", text: "Select a chat." }]);
         setChatId(updated[0]?.id || null);
@@ -221,12 +198,18 @@ export default function ChatScreen({
     }
   };
 
-  // SPEAK TEXT
   const speakText = (text) => {
     if (!text) return;
-    Speech.stop();
-    const finalLang = getLangCode(targetLang) || detectLanguage(text);
-    Speech.speak(text, { language: finalLang, pitch: 1.0, rate: 0.9 });
+    try {
+      Speech.stop();
+      // Use the preferred language code, but detect from text as fallback
+      const preferredCode = getLangCode(targetLang);
+      const detectedCode = detectLanguage(text);
+      const langCode = preferredCode !== "en-US" ? preferredCode : detectedCode;
+      Speech.speak(text, { language: langCode, pitch: 1.0, rate: 0.9 });
+    } catch (err) {
+      console.log("TTS error:", err);
+    }
   };
 
   return (
@@ -242,22 +225,10 @@ export default function ChatScreen({
             <TouchableOpacity onPress={goBack}>
               <Ionicons name="arrow-back" size={24} color="#0dd9f7" />
             </TouchableOpacity>
-
             <Text style={styles.headerText}>MyAI Companion</Text>
-
             <View style={{ flexDirection: "row", gap: 10 }}>
-              <Ionicons
-                name="menu-outline"
-                size={24}
-                color="#0dd9f7"
-                onPress={() => setShowChats(!showChats)}
-              />
-              <Ionicons
-                name="person-outline"
-                size={24}
-                color="#0dd9f7"
-                onPress={goUser}
-              />
+              <Ionicons name="menu-outline" size={24} color="#0dd9f7" onPress={() => setShowChats(!showChats)} />
+              <Ionicons name="person-outline" size={24} color="#0dd9f7" onPress={goUser} />
               <Ionicons
                 name={autoSpeak ? "volume-high" : "volume-mute"}
                 size={20}
@@ -282,9 +253,7 @@ export default function ChatScreen({
                     setShowLang(!showLang);
                     return;
                   }
-
                   const lastUserMsg = [...messages].reverse().find((m) => m.type === "user");
-
                   if (!lastUserMsg) {
                     sendMessage(
                       chip.label === "Summarise"
@@ -293,7 +262,6 @@ export default function ChatScreen({
                     );
                     return;
                   }
-
                   if (chip.label === "Summarise") {
                     sendMessage(`Please summarise the following in clear, simple language:\n\n"${lastUserMsg.text}"`);
                   } else {
@@ -328,7 +296,6 @@ export default function ChatScreen({
                       if (!last) return;
                       try {
                         const res = await translateText(last.text, lang, token?.token);
-                        setTargetLang(lang);
                         setMessages((p) => [...p, { type: "ai", text: res.translated_text }]);
                       } catch (err) {
                         console.log("Translate error:", err);
@@ -345,20 +312,13 @@ export default function ChatScreen({
           {/* SIDEBAR */}
           {showChats && (
             <View style={{
-              position: "absolute",
-              left: 0,
-              top: 60,
-              bottom: 0,
-              width: 200,
-              backgroundColor: "#0a0a2a",
-              zIndex: 10,
-              padding: 10,
+              position: "absolute", left: 0, top: 60, bottom: 0,
+              width: 200, backgroundColor: "#0a0a2a", zIndex: 10, padding: 10,
             }}>
               <ScrollView>
                 <TouchableOpacity onPress={handleCreateChat} style={{ marginBottom: 15 }}>
                   <Text style={{ color: "#0dd9f7", fontSize: 16 }}>+ New Chat</Text>
                 </TouchableOpacity>
-
                 {chatList.map((chat) => (
                   <View key={chat.id} style={{ marginBottom: 10 }}>
                     <TouchableOpacity onPress={() => { setChatId(chat.id); setShowChats(false); }}>
@@ -375,17 +335,13 @@ export default function ChatScreen({
             </View>
           )}
 
-          {/* CHAT MESSAGES */}
+          {/* MESSAGES */}
           <ScrollView ref={scrollRef} style={{ flex: 1, marginBottom: 80 }}>
             {messages.map((msg, i) => (
-              <View
-                key={i}
-                style={[styles.msg, msg.type === "user" ? styles.user : styles.ai]}
-              >
+              <View key={i} style={[styles.msg, msg.type === "user" ? styles.user : styles.ai]}>
                 <Text style={{ color: msg.type === "user" ? "#04041c" : "white" }}>
                   {msg.text}
                 </Text>
-
                 {msg.type === "ai" && (
                   <View style={{ flexDirection: "row", marginTop: 6, gap: 10 }}>
                     <Ionicons
@@ -404,14 +360,13 @@ export default function ChatScreen({
                 )}
               </View>
             ))}
-          </ScrollView>
+          </ScrollView> 
 
           {/* INPUT BAR */}
-          <View style={styles.floatingInput}>
+          <View style={styles.floatingInput} >
             <TouchableOpacity onPress={goRecord}>
               <Ionicons name="mic-outline" size={22} color="#0dd9f7" />
             </TouchableOpacity>
-
             <TextInput
               value={input}
               onChangeText={setInput}
@@ -420,11 +375,9 @@ export default function ChatScreen({
               style={styles.input}
               onSubmitEditing={() => sendMessage(input)}
             />
-
             <TouchableOpacity onPress={goCamera}>
-              <Ionicons name="camera-outline" size={22} color="#0dd9f7" />
+              <Ionicons name="camera-outline" size={22} color="#0dd9f7" padding={10} />
             </TouchableOpacity>
-
             <TouchableOpacity onPress={() => sendMessage(input)}>
               <Ionicons name="send" size={22} color="#0dd9f7" />
             </TouchableOpacity>

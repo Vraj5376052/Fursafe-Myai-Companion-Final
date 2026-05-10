@@ -20,7 +20,8 @@ export const login = async (email, password) => {
 
     clearTimeout(timeout);
 
-    const data = await res.json();
+    let data;
+    try { data = await res.json(); } catch { throw new Error("Server error — could not connect"); }
 
     if (!res.ok) {
       throw new Error(data.detail || "Login failed");
@@ -37,7 +38,8 @@ export const login = async (email, password) => {
 };
 
 // SIGNUP
-export const register = async (name, email, password) => {
+// SIGNUP
+export const register = async (name, email, password, acceptedTerms) => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
 
@@ -45,13 +47,19 @@ export const register = async (name, email, password) => {
     const res = await fetch(`${BASE_URL}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        accepted_terms: acceptedTerms,
+      }),
       signal: controller.signal,
     });
 
     clearTimeout(timeout);
 
-    const data = await res.json();
+    let data;
+    try { data = await res.json(); } catch { throw new Error("Server error — could not connect"); }
 
     if (!res.ok) {
       throw new Error(data.detail || "Registration failed");
@@ -169,10 +177,14 @@ export const transcribeAudio = async (uri, token) => {
 
   try {
     const formData = new FormData();
+    // Detect format from URI extension (expo-audio records m4a on iOS, webm on Android)
+    const ext = uri.split(".").pop()?.toLowerCase() || "m4a";
+    const mimeMap = { m4a: "audio/m4a", wav: "audio/wav", webm: "audio/webm", mp4: "audio/mp4", ogg: "audio/ogg" };
+    const mimeType = mimeMap[ext] || "audio/m4a";
     formData.append("file", {
       uri,
-      type: "audio/wav",
-      name: "recording.wav",
+      type: mimeType,
+      name: `recording.${ext}`,
     });
 
     const res = await fetch(`${BASE_URL}/api/transcribe`, {
@@ -186,7 +198,12 @@ export const transcribeAudio = async (uri, token) => {
 
     clearTimeout(timeout);
 
-    const data = await res.json();
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error("Transcription failed — invalid server response");
+    }
 
     if (!res.ok) {
       throw new Error(data.detail || "Transcription failed");
@@ -276,22 +293,18 @@ export const fetchChatById = async (chatId, token) => {
 };
 
 // ADD MESSAGE
-export const addMessage = async (chatId, message, token) => {
+export const addMessage = async (chatId, message, token, targetLang = "English") => {
   const res = await fetch(`${BASE_URL}/chat/add-chat/${chatId}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({ message, target_language: targetLang }),
   });
-
+ 
   const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.detail || "Chat failed");
-  }
-
+  if (!res.ok) throw new Error(data.detail || "Chat failed");
   return data;
 };
 

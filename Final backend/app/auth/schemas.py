@@ -6,6 +6,7 @@ class UserRegister(BaseModel):
     name: str
     email: str
     password: str
+    accepted_terms: bool = False
 
     @field_validator("email")
     @classmethod

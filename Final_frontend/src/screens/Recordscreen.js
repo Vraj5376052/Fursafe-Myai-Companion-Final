@@ -7,37 +7,29 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Audio } from "expo-av";
+import { useAudioRecorder, AudioModule, RecordingPresets } from "expo-audio";
 import styles from "../styles/style";
 import { transcribeAudio } from "../services/apiService";
 
 export default function RecordScreen({ goBack, token }) {
-  const [isRecording, setIsRecording] = useState(false);
+  const [isRecording, setIsRecording]   = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const recordingRef = useRef(null);
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
-  // Waveform bars — each has its own animated value
-  const bars = useRef(
-    [...Array(20)].map(() => new Animated.Value(10))
-  ).current;
+  // Track recording state in a ref so cleanup never touches the native object
+  const recordingStarted = useRef(false);
+  const didStop = useRef(false);
 
-  // Start waveform animation only while recording
+  // Waveform bars
+  const bars = useRef([...Array(20)].map(() => new Animated.Value(10))).current;
   const animLoops = useRef([]);
 
   const startWaveform = () => {
     animLoops.current = bars.map((anim) => {
       const loop = Animated.loop(
         Animated.sequence([
-          Animated.timing(anim, {
-            toValue: Math.random() * 40 + 10,
-            duration: 200 + Math.random() * 200,
-            useNativeDriver: false,
-          }),
-          Animated.timing(anim, {
-            toValue: 10,
-            duration: 200 + Math.random() * 200,
-            useNativeDriver: false,
-          }),
+          Animated.timing(anim, { toValue: Math.random() * 40 + 10, duration: 200 + Math.random() * 200, useNativeDriver: false }),
+          Animated.timing(anim, { toValue: 10, duration: 200 + Math.random() * 200, useNativeDriver: false }),
         ])
       );
       loop.start();
@@ -46,62 +38,35 @@ export default function RecordScreen({ goBack, token }) {
   };
 
   const stopWaveform = () => {
-    animLoops.current.forEach((loop) => loop.stop());
-    bars.forEach((anim) => anim.setValue(10));
+    animLoops.current.forEach((l) => l.stop());
+    bars.forEach((a) => a.setValue(10));
   };
 
-  // Auto-start recording when screen opens
   useEffect(() => {
     startRecording();
     return () => {
-      // Clean up if user navigates away mid-recording
-      if (recordingRef.current) {
-        recordingRef.current.stopAndUnloadAsync().catch(() => {});
+      // Only stop if we started and haven't stopped yet — avoid touching native obj after unmount
+      if (recordingStarted.current && !didStop.current) {
+        didStop.current = true;
+        try { audioRecorder.stop(); } catch (_) {}
       }
     };
   }, []);
 
   const startRecording = async () => {
     try {
-      const { granted } = await Audio.requestPermissionsAsync();
+      const { granted } = await AudioModule.requestRecordingPermissionsAsync();
       if (!granted) {
         Alert.alert("Permission denied", "Microphone access is required.");
         goBack();
         return;
       }
 
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
+      await AudioModule.setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await audioRecorder.prepareToRecordAsync(RecordingPresets.HIGH_QUALITY);
+      audioRecorder.record();
 
-      const { recording } = await Audio.Recording.createAsync({
-        android: {
-          extension: ".wav",
-          outputFormat: Audio.AndroidOutputFormat.DEFAULT,
-          audioEncoder: Audio.AndroidAudioEncoder.DEFAULT,
-          sampleRate: 16000,
-          numberOfChannels: 1,
-          bitRate: 128000,
-        },
-        ios: {
-          extension: ".wav",
-          outputFormat: Audio.IOSOutputFormat.LINEARPCM,
-          audioQuality: Audio.IOSAudioQuality.HIGH,
-          sampleRate: 16000,
-          numberOfChannels: 1,
-          bitRate: 128000,
-          linearPCMBitDepth: 16,
-          linearPCMIsBigEndian: false,
-          linearPCMIsFloat: false,
-        },
-        web: {
-          mimeType: "audio/webm",
-          bitsPerSecond: 128000,
-        },
-      });
-
-      recordingRef.current = recording;
+      recordingStarted.current = true;
       setIsRecording(true);
       startWaveform();
     } catch (err) {
@@ -112,18 +77,18 @@ export default function RecordScreen({ goBack, token }) {
   };
 
   const stopAndTranscribe = async () => {
-    if (!recordingRef.current || isProcessing) return;
+    if (!recordingStarted.current || didStop.current || isProcessing) return;
 
     try {
+      didStop.current = true;
       stopWaveform();
       setIsRecording(false);
       setIsProcessing(true);
 
-      await recordingRef.current.stopAndUnloadAsync();
-      const uri = recordingRef.current.getURI();
-      recordingRef.current = null;
+      await audioRecorder.stop();
+      const uri = audioRecorder.uri;
 
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+      await AudioModule.setAudioModeAsync({ allowsRecording: false });
 
       if (!uri) {
         Alert.alert("Error", "No audio recorded.");
@@ -148,56 +113,40 @@ export default function RecordScreen({ goBack, token }) {
     }
   };
 
+  const handleBack = () => {
+    if (recordingStarted.current && !didStop.current) {
+      didStop.current = true;
+      try { audioRecorder.stop(); } catch (_) {}
+    }
+    goBack();
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.phoneFrame}>
 
-        {/* HEADER */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => {
-            if (recordingRef.current) {
-              recordingRef.current.stopAndUnloadAsync().catch(() => {});
-            }
-            goBack();
-          }}>
+          <TouchableOpacity onPress={handleBack}>
             <Ionicons name="arrow-back" size={24} color="#0dd9f7" />
           </TouchableOpacity>
         </View>
 
         <View style={styles.recordContainer}>
-
-          {/* MIC ICON */}
-          <Ionicons
-            name="mic"
-            size={70}
-            color={isRecording ? "#0dd9f7" : "#555"}
-          />
+          <Ionicons name="mic" size={70} color={isRecording ? "#0dd9f7" : "#555"} />
 
           <Text style={{ color: "white", marginTop: 20 }}>
-            {isProcessing
-              ? "Transcribing..."
-              : isRecording
-              ? "I'm listening..."
-              : "Starting..."}
+            {isProcessing ? "Transcribing..." : isRecording ? "I'm listening..." : "Starting..."}
           </Text>
 
-          {/* WAVEFORM */}
           <View style={styles.waveContainer}>
             {bars.map((anim, i) => (
               <Animated.View
                 key={i}
-                style={{
-                  width: 3,
-                  height: anim,
-                  backgroundColor: "#0dd9f7",
-                  marginHorizontal: 2,
-                  borderRadius: 2,
-                }}
+                style={{ width: 3, height: anim, backgroundColor: "#0dd9f7", marginHorizontal: 2, borderRadius: 2 }}
               />
             ))}
           </View>
 
-          {/* STOP BUTTON */}
           <TouchableOpacity
             onPress={stopAndTranscribe}
             style={{ marginTop: 30 }}
@@ -207,7 +156,6 @@ export default function RecordScreen({ goBack, token }) {
               {isProcessing ? "Processing..." : "Stop"}
             </Text>
           </TouchableOpacity>
-
         </View>
 
       </View>

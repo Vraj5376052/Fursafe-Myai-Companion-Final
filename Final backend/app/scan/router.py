@@ -57,10 +57,14 @@ async def transcribe_audio(file: UploadFile = File(...)):
     try:
         audio_bytes = await file.read()
 
+        # Preserve original filename/content-type so Groq gets the right format
+        filename = file.filename or "recording.m4a"
+        content_type = file.content_type or "audio/m4a"
+
         resp = requests.post(
             "https://api.groq.com/openai/v1/audio/transcriptions",
             headers={"Authorization": f"Bearer {groq_api_key}"},
-            files={"file": ("recording.wav", audio_bytes, "audio/wav")},
+            files={"file": (filename, audio_bytes, content_type)},
             data={"model": "whisper-large-v3", "response_format": "json"},
             timeout=60,
         )

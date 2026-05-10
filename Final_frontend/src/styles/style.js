@@ -134,10 +134,12 @@ export default StyleSheet.create({
     borderRadius: 30,
     paddingHorizontal: 14,
     height: 56,
+    width: "90%",
     shadowColor: "#000",
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 10,
+    paddingBottom: 10,
   },
 
   input: {
@@ -474,5 +476,14 @@ export default StyleSheet.create({
     backgroundColor: "#0dd9f7",
     width: 10,
     height: 10,
+  },
+
+    // TERMS SCREEN
+  sectionTitle: {
+    color: "#0dd9f7",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginTop: 18,
+    marginBottom: 8,
   },
 });

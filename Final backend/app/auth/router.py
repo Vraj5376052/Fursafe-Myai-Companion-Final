@@ -68,6 +68,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 
 @router.post("/register")
 async def register(user_data: UserRegister, db: Session = Depends(get_db)):
+    if not user_data.accepted_terms:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You must accept the Terms and Conditions to register"
+        )
+
     existing_user = db.query(User).filter(User.email == user_data.email).first()
     if existing_user:
         raise HTTPException(
@@ -79,6 +85,9 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
         name=user_data.name,
         email=user_data.email,
         password_hash=hash_password(user_data.password),
+        accepted_terms=True,
+        terms_accepted_at=datetime.now(timezone.utc),
+        terms_version="1.0",
     )
 
     db.add(new_user)

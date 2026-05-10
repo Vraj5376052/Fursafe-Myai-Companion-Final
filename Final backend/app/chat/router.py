@@ -85,7 +85,8 @@ async def create_chat(db: Session = Depends(get_db), current_user: User = Depend
 @router.post("/add-chat/{chat_id}")
 async def add_chat(chat_id: int, request: dict, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     message_text = request.get("message", "").strip()
-    print(f"[DEBUG] User {current_user.id} is sending a message to chat {chat_id}.")
+    target_language = request.get("target_language", "English").strip() or "English"
+    print(f"[DEBUG] User {current_user.id} is sending a message to chat {chat_id} (language: {target_language}).")
 
     if not message_text:
         raise HTTPException(status_code=400, detail="Message is required")
@@ -125,7 +126,11 @@ async def add_chat(chat_id: int, request: dict, db: Session = Depends(get_db), c
 
     try:
         # Build conversation history in OpenAI format (same concept as Cody's Gemini history)
-        messages_payload = [{"role": "system", "content": SYSTEM_PROMPT}]
+        lang_instruction = (
+            f"\n\nIMPORTANT: You must respond entirely in {target_language}. Do not use any other language."
+            if target_language.lower() != "english" else ""
+        )
+        messages_payload = [{"role": "system", "content": SYSTEM_PROMPT + lang_instruction}]
         for msg in past_messages:
             role = "user" if msg.role == "user" else "assistant"
             messages_payload.append({"role": role, "content": msg.message})
