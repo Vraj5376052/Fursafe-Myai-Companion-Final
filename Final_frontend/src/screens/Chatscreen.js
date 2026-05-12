@@ -79,9 +79,18 @@ export default function ChatScreen({
     loadChats();
   }, [token]);
 
-  // LOAD CHAT MESSAGES
+  // LOAD CHAT MESSAGES — skip if there's an incoming voice/OCR message to avoid race condition
+  const prevChatId = useRef(null);
   useEffect(() => {
     if (!chatId) return;
+    // Skip reload if returning from voice/camera with a pending message
+    if (incoming) {
+      prevChatId.current = chatId; // mark as seen so we don't reload after message is sent
+      return;
+    }
+    // Skip if chatId hasn't changed
+    if (chatId === prevChatId.current) return;
+    prevChatId.current = chatId;
     const loadChat = async () => {
       try {
         setMessages([{ type: "ai", text: "Loading chat..." }]);
@@ -98,7 +107,7 @@ export default function ChatScreen({
       }
     };
     loadChat();
-  }, [chatId]);
+  }, [chatId, incoming]);
 
   // SEND MESSAGE
   const sendMessage = async (text) => {
@@ -159,12 +168,12 @@ export default function ChatScreen({
     }
   };
 
-  // INCOMING 
+  // INCOMING — voice/OCR text arrives here; clear first to prevent double-fire
   useEffect(() => {
-    if (incoming) {
-      sendMessage(incoming);
-      setIncoming("");
-    }
+    if (!incoming) return;
+    const text = incoming;
+    setIncoming("");
+    sendMessage(text);
   }, [incoming]);
 
   // AUTO SCROLL
