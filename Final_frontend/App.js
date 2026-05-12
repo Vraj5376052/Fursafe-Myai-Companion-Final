@@ -22,6 +22,7 @@ export default function App() {
   const [messages, setMessages] = useState([
     { type: "ai", text: "Hi, I'm here to help." },
   ]);
+  const [chatId, setChatId] = useState(null);
 
   const goChat = (text) => {
     setIncoming(text || "");
@@ -126,9 +127,11 @@ export default function App() {
       goCamera={() => setScreen("camera")}
       goUser={() => setScreen("user")}
       incoming={incoming}
-      setIncoming={setIncoming}          
+      setIncoming={setIncoming}
       messages={messages}
       setMessages={setMessages}
+      chatId={chatId}
+      setChatId={setChatId}
     />
   );
 }

@@ -32,9 +32,23 @@ export default function SignupScreen({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const validatePassword = (p) => {
+    if (p.length < 8)              return "Password must be at least 8 characters";
+    if (!/[A-Z]/.test(p))          return "Password must contain an uppercase letter";
+    if (!/[a-z]/.test(p))          return "Password must contain a lowercase letter";
+    if (!/[0-9]/.test(p))          return "Password must contain a number";
+    if (!/[!@#$%^&*(),.?":{}|<>_\-]/.test(p)) return "Password must contain a symbol";
+    return null;
+  };
+
   const handleSignup = async () => {
     if (!name || !email || !password || !confirm) {
       setError("Please fill all fields");
+      return;
+    }
+    const pwdError = validatePassword(password);
+    if (pwdError) {
+      setError(pwdError);
       return;
     }
     if (password !== confirm) {

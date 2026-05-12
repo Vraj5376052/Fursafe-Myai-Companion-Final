@@ -26,7 +26,7 @@ export default function ChatScreen({
   goBack,
   goUser,
   incoming,
-  setIncoming,         
+  setIncoming,
   token,
   messages,
   setMessages,
@@ -34,10 +34,11 @@ export default function ChatScreen({
   setAutoSpeak,
   targetLang,
   setTargetLang,
+  chatId,
+  setChatId,
 }) {
   const [input, setInput] = useState("");
   const scrollRef = useRef(null);
-  const [chatId, setChatId] = useState(null);
   const [chatList, setChatList] = useState([]);
   const [showChats, setShowChats] = useState(false);
   const [showLang, setShowLang] = useState(false);
