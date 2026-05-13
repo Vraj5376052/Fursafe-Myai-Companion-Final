@@ -62,7 +62,7 @@ export default function OnboardingScreen({ goNext }) {
       <Text
         style={[
           styles.title,
-          { marginTop: 30, textAlign: "center" },
+          { marginTop: 30, textAlign: "center", marginTop: 20 },
         ]}
       >
         {item.title}
