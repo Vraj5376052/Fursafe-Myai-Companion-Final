@@ -4,15 +4,13 @@ import {
   Text,
   TouchableOpacity,
   Animated,
-  Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import styles from "../styles/style";
 
-const { width } = Dimensions.get("window");
-
 export default function OnboardingScreen({ goNext }) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
   const scrollX = useRef(new Animated.Value(0)).current;
   const flatRef = useRef(null);
 
@@ -50,8 +48,8 @@ export default function OnboardingScreen({ goNext }) {
   const renderItem = ({ item }) => (
     <View
       style={{
-        width,
-        flex: 1, 
+        width: containerWidth,
+        flex: 1,
         justifyContent: "center",
         alignItems: "center",
         paddingHorizontal: 30,
@@ -81,7 +79,7 @@ export default function OnboardingScreen({ goNext }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.phoneFrame}>
+      <View style={styles.phoneFrame} onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}>
 
         {/* SKIP */}
         <TouchableOpacity
@@ -112,7 +110,7 @@ export default function OnboardingScreen({ goNext }) {
           )}
           onMomentumScrollEnd={(e) => {
             const index = Math.round(
-              e.nativeEvent.contentOffset.x / width
+              e.nativeEvent.contentOffset.x / containerWidth
             );
             setCurrentIndex(index);
           }}
