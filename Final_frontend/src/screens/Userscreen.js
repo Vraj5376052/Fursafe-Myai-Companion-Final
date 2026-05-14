@@ -19,6 +19,8 @@ export default function UserScreen({
   setAutoSpeak,
   targetLang,
   setTargetLang,
+  goTerms,
+  goOnboarding,
 }) {
   const [openLang, setOpenLang] = useState(false);
   const [search, setSearch] = useState("");
@@ -229,6 +231,22 @@ export default function UserScreen({
               </TouchableOpacity>
             </View>
           )}
+
+          {/* TERMS & CONDITIONS */}
+          <TouchableOpacity style={styles.userBtn} onPress={goTerms}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Ionicons name="document-text-outline" size={18} color="#0dd9f7" />
+              <Text style={styles.userBtnText}>Terms & Conditions</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* VIEW ONBOARDING */}
+          <TouchableOpacity style={styles.userBtn} onPress={goOnboarding}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Ionicons name="information-circle-outline" size={18} color="#0dd9f7" />
+              <Text style={styles.userBtnText}>View Onboarding</Text>
+            </View>
+          </TouchableOpacity>
 
           {/* LOGOUT */}
           <TouchableOpacity style={styles.logoutBtn} onPress={onLogout}>

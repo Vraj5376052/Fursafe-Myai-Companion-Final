@@ -238,7 +238,7 @@ export default function ChatScreen({
             <Text style={styles.headerText}>MyAI Companion</Text>
             <View style={{ flexDirection: "row", gap: 10 }}>
               <Ionicons name="menu-outline" size={24} color="#0dd9f7" onPress={() => setShowChats(!showChats)} />
-              <Ionicons name="person-outline" size={24} color="#0dd9f7" onPress={goUser} />
+              <Ionicons name="settings-outline" size={24} color="#0dd9f7" onPress={goUser} />
               <Ionicons
                 name={autoSpeak ? "volume-high" : "volume-mute"}
                 size={20}

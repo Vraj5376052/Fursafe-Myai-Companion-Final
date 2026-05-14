@@ -39,7 +39,11 @@ export default function App() {
   }
 
   if (screen === "onboarding") {
-    return <OnboardingScreen goNext={() => setScreen("login")} />;
+    return (
+      <OnboardingScreen
+        goNext={() => setScreen(previousScreen === "user" ? "user" : "login")}
+      />
+    );
   }
 
   if (screen === "login") {
@@ -82,6 +86,7 @@ export default function App() {
           }
           setScreen(previousScreen);
         }}
+        fromSettings={previousScreen === "user"}
       />
     );
   }
@@ -111,6 +116,11 @@ export default function App() {
         setAutoSpeak={setAutoSpeak}
         targetLang={targetLang}
         setTargetLang={setTargetLang}
+        goTerms={() => goTerms("user")}
+        goOnboarding={() => {
+          setPreviousScreen("user");
+          setScreen("onboarding");
+        }}
       />
     );
   }
