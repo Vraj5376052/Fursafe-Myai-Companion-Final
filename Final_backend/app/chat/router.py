@@ -206,13 +206,31 @@ async def add_chat(chat_id: int, request: dict, db: Session = Depends(get_db), c
 
     # Update chat title from first message
     if decrypt_text(chat.title) == "New Chat":
-        short_title = message_text[:40] + ("..." if len(message_text) > 40 else "")
-        chat.title = encrypt_text(short_title)
+        # Generate a chat title
+        try:
+            title_resp = req.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {groq_api_key}"},
+                json={
+                    "model": "llama-3.3-70b-versatile",
+                    "messages": [
+                        {"role": "system", "content": "You are a helpful assistant. Create a very short, 3-5 word title for a chat based on the user's first message. Do not use quotes or a period. Output ONLY the title."},
+                        {"role": "user", "content": message_text}
+                    ],
+                    "max_tokens": 20,
+                },
+                timeout=5, # Short timeout for title
+            )
+            generated_title = title_resp.json()["choices"][0]["message"]["content"].strip()
+            chat.title = encrypt_text(generated_title)
+        except Exception as e:
+            print(f"[DEBUG] Title generation failed: {e}")
+            chat.title = encrypt_text(message_text[:40] + "...")
 
     db.commit()
 
     print(f"[DEBUG] Chat {chat_id} updated with AI response for User {current_user.id}.")
-    return {"user_message": message_text, "ai_message": ai_text}
+    return {"user_message": message_text, "ai_message": ai_text, "new_title": decrypt_text(chat.title)}
 
 
 # ADDED: delete chat endpoint (not in Cody's original, needed by frontend)
