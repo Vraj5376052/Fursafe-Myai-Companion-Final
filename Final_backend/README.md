@@ -1,6 +1,6 @@
 # MyAI Companion — Backend
 
-FastAPI server handling authentication, AI chat, voice transcription, and document OCR.
+FastAPI server handling authentication, encryption-at-rest AI chat, voice transcription, and document OCR.
 
 For full setup instructions see the root [README.md](../README.md).
 
@@ -43,9 +43,12 @@ type nul > .env
 
 Open the `.env` file and add:
 ```
+ENCRYPTION_KEY=your_generated_base64_key_here
 GROQ_API_KEY=your_groq_key_here
 OCR_API_KEY=your_ocr_space_key_here
 ```
+
+> **CRITICAL:** Do not change your `ENCRYPTION_KEY` once you have started saving chats. If changed, previous messages will become unreadable.
 
 Get Groq key (free): https://console.groq.com → API Keys → Create API Key
 
@@ -59,6 +62,14 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 Verify at http://localhost:8000 — should show `{"status":"online"}`
 
 ---
+
+## Data Privacy & Encryption
+
+The backend implements **AES-256 symmetric encryption** (via Fernet) for all patient-AI interactions.
+
+- **Encrypted Fields:** Chat titles and all message content.
+- **Decryption:** Happens in-memory only when sending data to the authorized user or providing context to the AI.
+- **At Rest:** Data stored in `myai_companion.db` is unreadable without the `ENCRYPTION_KEY`.
 
 ## API Routes
 
@@ -114,6 +125,8 @@ Final backend/
 ---
 
 ## Troubleshooting
+
+**`RuntimeError: ENCRYPTION_KEY not found`** — Ensure `ENCRYPTION_KEY` is defined in `.env` and `load_dotenv(override=True)` is called at the very top of `main.py`.
 
 **`ModuleNotFoundError`** — Run `conda activate myai` then `pip install -r requirements.txt`
 
