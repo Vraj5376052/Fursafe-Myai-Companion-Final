@@ -7,8 +7,26 @@ from app.model.chat import Chat, ChatMessage
 from app.model.user import User
 from datetime import datetime, timezone
 from app.auth.router import get_current_user
+from cryptography.fernet import Fernet
 
 router = APIRouter()
+
+# --- Encryption Setup ---
+ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY")
+if not ENCRYPTION_KEY:
+    raise RuntimeError("ENCRYPTION_KEY not found in environment variables")
+cipher_suite = Fernet(ENCRYPTION_KEY.encode())
+
+def encrypt_text(text: str) -> str:
+    if not text: return ""
+    return cipher_suite.encrypt(text.encode()).decode()
+
+def decrypt_text(text: str) -> str:
+    if not text: return ""
+    try:
+        return cipher_suite.decrypt(text.encode()).decode()
+    except Exception:
+        return text
 
 # System prompt for the AI — keeps responses safe and patient-appropriate
 SYSTEM_PROMPT = (
@@ -46,7 +64,11 @@ async def fetch_chats(db: Session = Depends(get_db), current_user: User = Depend
 
     # Return serialised list so SQLAlchemy objects don't cause issues
     return [
-        {"id": c.id, "title": c.title, "created_at": str(c.created_at)}
+        {
+            "id": c.id, 
+            "title": decrypt_text(c.title), 
+            "created_at": str(c.created_at)
+        }
         for c in chats
     ]
 
@@ -71,9 +93,14 @@ async def fetch_chat(chat_id: int, db: Session = Depends(get_db), current_user: 
 
     return {
         "id": chat.id,
-        "title": chat.title,
+        "title": decrypt_text(chat.title),
         "messages": [
-            {"id": m.id, "role": m.role, "message": m.message, "timestamp": str(m.timestamp)}
+            {
+                "id": m.id, 
+                "role": m.role, 
+                "message": decrypt_text(m.message), 
+                "timestamp": str(m.timestamp)
+            }
             for m in messages
         ]
     }
@@ -84,7 +111,7 @@ async def create_chat(db: Session = Depends(get_db), current_user: User = Depend
     print(f"[DEBUG] User {current_user.id} is creating a new chat.")
 
     new_chat = Chat(
-        title="New Chat",
+        title=encrypt_text("New Chat"),
         user_id=current_user.id,
         created_at=datetime.now(timezone.utc)
     )
@@ -93,7 +120,7 @@ async def create_chat(db: Session = Depends(get_db), current_user: User = Depend
     db.refresh(new_chat)
 
     print(f"[DEBUG] Successfully created Chat ID {new_chat.id} for User {current_user.id}.")
-    return {"chatId": new_chat.id, "title": new_chat.title, "created_at": str(new_chat.created_at)}
+    return {"chatId": new_chat.id, "title": "New Chat", "created_at": str(new_chat.created_at)}
 
 
 @router.post("/add-chat/{chat_id}")
@@ -123,7 +150,7 @@ async def add_chat(chat_id: int, request: dict, db: Session = Depends(get_db), c
     user_message = ChatMessage(
         chat_id=chat_id,
         user_id=current_user.id,
-        message=message_text,
+        message=encrypt_text(message_text),
         role="user",
         timestamp=datetime.now(timezone.utc)
     )
@@ -145,9 +172,10 @@ async def add_chat(chat_id: int, request: dict, db: Session = Depends(get_db), c
             if target_language.lower() != "english" else ""
         )
         messages_payload = [{"role": "system", "content": SYSTEM_PROMPT + lang_instruction}]
+
         for msg in past_messages:
             role = "user" if msg.role == "user" else "assistant"
-            messages_payload.append({"role": role, "content": msg.message})
+            messages_payload.append({"role": role, "content": decrypt_text(msg.message)})
         messages_payload.append({"role": "user", "content": message_text})
 
         response = req.post(
@@ -170,20 +198,21 @@ async def add_chat(chat_id: int, request: dict, db: Session = Depends(get_db), c
     ai_message = ChatMessage(
         chat_id=chat_id,
         user_id=current_user.id,
-        message=ai_text,
+        message=encrypt_text(ai_text),
         role="ai",
         timestamp=datetime.now(timezone.utc)
     )
     db.add(ai_message)
 
     # Update chat title from first message
-    if chat.title == "New Chat":
-        chat.title = message_text[:40] + ("..." if len(message_text) > 40 else "")
+    if decrypt_text(chat.title) == "New Chat":
+        short_title = message_text[:40] + ("..." if len(message_text) > 40 else "")
+        chat.title = encrypt_text(short_title)
 
     db.commit()
 
     print(f"[DEBUG] Chat {chat_id} updated with AI response for User {current_user.id}.")
-    return {"user_message": user_message.message, "ai_message": ai_text}
+    return {"user_message": message_text, "ai_message": ai_text}
 
 
 # ADDED: delete chat endpoint (not in Cody's original, needed by frontend)

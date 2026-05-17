@@ -1,3 +1,10 @@
+import os
+from dotenv import load_dotenv 
+
+load_dotenv(override=True)
+
+# Load env variables first
+
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.auth.router import router as auth_router
@@ -5,9 +12,6 @@ from app.chat.router import router as chat_router
 from app.scan.router import router as scan_router
 from app.core.database import Base, engine, SessionLocal
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
-
-load_dotenv(override=True)
 
 
 @asynccontextmanager
