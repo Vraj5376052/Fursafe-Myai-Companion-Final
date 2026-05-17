@@ -157,8 +157,15 @@ export default function ChatScreen({
 
       if (autoSpeak) speakText(aiText);
 
-      const updatedChats = await fetchChats(token.token);
-      setChatList(updatedChats);
+      // Update chat title in sidebar if backend generated a new one
+      if (res.new_title) {
+        setChatList((prev) =>
+          prev.map((c) => c.id === currentChatId ? { ...c, title: res.new_title } : c)
+        );
+      } else {
+        const updatedChats = await fetchChats(token.token);
+        setChatList(updatedChats);
+      }
     } catch (error) {
       setMessages((p) => {
         const updated = [...p];
